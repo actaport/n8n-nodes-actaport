@@ -36,7 +36,7 @@
     ],
     "nodes": [
       "dist/nodes/Actaport/Actaport.node.js",
-      "dist/nodes/ActaportTrigger/ActaportTrigger.node.js"
+      "dist/nodes/Actaport/ActaportTrigger.node.js"
     ]
   },
   "devDependencies": {
