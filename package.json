@@ -1,6 +1,6 @@
 {
   "name": "@actaport/n8n-nodes-actaport",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Actaport is a cloud-based platform for law firm management that helps law firms optimise their daily work.",
   "license": "MIT",
   "homepage": "www.actaport.de",
