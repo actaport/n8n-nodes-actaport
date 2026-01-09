@@ -1,0 +1,21 @@
+{
+  "node": "n8n-nodes-actaport",
+  "displayName": "Actaport",
+  "nodeVersion": "1.0",
+  "codexVersion": "1.0",
+  "categories": [
+    "Productivity"
+  ],
+  "resources": {
+    "credentialDocumentation": [
+      {
+        "url": "https://api.actaport.de/api-docs/rest-api/reference/public#tag/Authentifizierung/operation/authenticate"
+      }
+    ],
+    "primaryDocumentation": [
+      {
+        "url": "https://api.actaport.de/api-docs/rest-api/reference/public"
+      }
+    ]
+  }
+}

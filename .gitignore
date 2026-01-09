@@ -1,0 +1,8 @@
+# Ignore configuration files
+.vscode
+.idea
+.DS_Store
+
+# Build folders
+dist
+node_modules

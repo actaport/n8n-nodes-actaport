@@ -1,0 +1,53 @@
+{
+  "name": "n8n-nodes-actaport",
+  "version": "0.1.0",
+  "description": "Actaport is a cloud-based platform for law firm management that helps law firms optimise their daily work.",
+  "license": "MIT",
+  "homepage": "www.actaport.de",
+  "keywords": [
+    "n8n-community-node-package",
+    "Productivity"
+  ],
+  "author": {
+    "name": "Actaport Integrations",
+    "email": "integration@actaport.de"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/actaport/n8n-nodes-actaport"
+  },
+  "scripts": {
+    "build": "n8n-node build",
+    "build:watch": "tsc --watch",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "release": "n8n-node release",
+    "prepublishOnly": "n8n-node prerelease"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/ActaportOAuth2Api.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Actaport/Actaport.node.js",
+      "dist/nodes/ActaportTrigger/ActaportTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "*",
+    "eslint": "9.32.0",
+    "prettier": "3.6.2",
+    "release-it": "^19.0.4",
+    "typescript": "5.9.2",
+    "@types/node": "^20.12.8"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}
