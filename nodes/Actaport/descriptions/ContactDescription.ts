@@ -38,6 +38,38 @@ export const contactDescription: INodeProperties[] = [
 						method: 'GET',
 						url: '=/v1/kontakte',
 						arrayFormat: 'repeat',
+						qs: {
+							size: "={{ $parameter['returnAll'] ? 100 : $parameter['size'] }}",
+						},
+					},
+					send: {
+						paginate: "={{ $parameter['returnAll'] }}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'content',
+								},
+							},
+						],
+					},
+					operations: {
+						pagination: {
+							type: 'generic',
+							properties: {
+								continue: '={{ !$response.body?.last }}',
+								request: {
+									qs: {
+										page: '={{ ($response.body?.number ?? -1) + 1 }}',
+										size: '={{ $response.body?.size ?? 100 }}',
+										filter: '={{ $request.qs?.filter }}',
+										sort: '={{ $request.qs?.sort }}',
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -84,6 +116,7 @@ export const contactDescription: INodeProperties[] = [
 			show: {
 				operation: ['getAll'],
 				resource: ['contact'],
+				returnAll: [false],
 			},
 		},
 	},
@@ -91,7 +124,7 @@ export const contactDescription: INodeProperties[] = [
 		displayName: 'Size',
 		name: 'size',
 		description: 'The size of the page to return',
-		default: 20,
+		default: 100,
 		type: 'number',
 		routing: {
 			send: {
@@ -103,6 +136,7 @@ export const contactDescription: INodeProperties[] = [
 			show: {
 				operation: ['getAll'],
 				resource: ['contact'],
+				returnAll: [false],
 			},
 		},
 	},
@@ -206,6 +240,19 @@ export const contactDescription: INodeProperties[] = [
 					'    .filter(s => s.field && s.direction)' +
 					'    .map(s => `${s.field},${s.direction}`)' +
 					' : undefined }}',
+			},
+		},
+	},
+	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		displayOptions: {
+			show: {
+				operation: ['getAll'],
+				resource: ['contact'],
 			},
 		},
 	},

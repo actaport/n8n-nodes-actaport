@@ -24,7 +24,7 @@ nodes documentation.
 
 1. Go to **Settings > Community Nodes**.
 2. Select **Install**.
-3. Enter `n8n-nodes-actaport` in **Enter npm package name**.
+3. Enter `@actaport/n8n-nodes-actaport` in **Enter npm package name**.
 4. Agree to the [risks](https://docs.n8n.io/integrations/community-nodes/risks/) of using community nodes: select **I
    understand the risks of installing unverified code from a public source**.
 5. Select **Install**.
@@ -42,8 +42,9 @@ panel.
 | **Contact**                           | get, getAll, create, update               |
 | **Deadline**                          | get, getAll, create, update               |
 | **Document**                          | get, getAll, update, download             |
+| **Document Template**                 | get, getAll                               |
 | **Expense**                           | get, getAll, create, update, delete       |
-| **Folder**                            | get, getAll                               |
+| **Folder**                            | get, getAll, create                       |
 | **Invoice**                           | get, getAll                               |
 | **Note**                              | get, getAll, create, update               |
 | **Resubmission**                      | get, getAll, create, update, updateStatus |

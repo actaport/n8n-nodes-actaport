@@ -1,7 +1,7 @@
 import {
 	ILoadOptionsFunctions,
 	INodeListSearchItems,
-	INodeListSearchResult,
+	INodeListSearchResult, NodeApiError,
 	NodeOperationError,
 } from 'n8n-workflow';
 import { actaportApiRequest } from '../GenericFunctions';
@@ -46,7 +46,10 @@ export async function getClients(this: ILoadOptionsFunctions): Promise<INodeList
 			`/akten/${laufendeNummer}/${bezugsJahr}/honorar`,
 		)) as ClientSearchResponse;
 	} catch (error) {
-		this.logger?.warn('Error fetching clients: ' + (error as Error).message);
+		throw new NodeApiError(this.getNode(), {
+			message: 'Error while fetching clients of case ' + laufendeNummer + ' for year ' + bezugsJahr,
+			description: error instanceof Error ? error.message : 'Unknown error',
+		});
 	}
 
 	const mandantenArray = Object.values(responseData.mandanten ?? {});

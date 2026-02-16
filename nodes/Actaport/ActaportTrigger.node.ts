@@ -4,6 +4,7 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	NodeConnectionTypes,
+	NodeApiError,
 } from 'n8n-workflow';
 
 import {
@@ -65,21 +66,17 @@ export class ActaportTrigger implements INodeType {
 				const trimmedWebhookUrl = webhookUrl.trim();
 				const events = this.getNodeParameter('events') as string[];
 
-				this.logger?.debug?.('[ActaportTrigger] Checking existing Actaport webhooks...');
-
 				let responseData: ActaportWebhook[];
 
 				try {
 					responseData = (await actaportApiRequestGetAllPaginatedItems.call(this, '/webhooks', {
 						limit: 25,
 					})) as ActaportWebhook[];
-
-					this.logger?.info('Got number of existing webhooks: ' + responseData.length);
 				} catch (error) {
-					this.logger?.error?.(
-						`[ActaportTrigger] Failed to fetch existing webhooks: ${(error as Error).message}`,
-					);
-					return false;
+					throw new NodeApiError(this.getNode(), {
+						message: 'Error while fetching existing webhooks',
+						description: error instanceof Error ? error.message : 'Unknown error',
+					});
 				}
 
 				for (const webhook of responseData) {
@@ -107,30 +104,23 @@ export class ActaportTrigger implements INodeType {
 				const hookUrl = this.getNodeWebhookUrl('default');
 				const staticData = getStaticData(this);
 
-				this.logger?.info?.(
-					`[ActaportTrigger] Creating webhook for events [${events.join(', ')}] → ${hookUrl}`,
-				);
-
 				try {
 					const response = (await actaportApiRequest.call(this, 'POST', '/webhooks', {
 						events,
 						hookUrl,
 						description: `n8n Actaport Trigger [${events.join(', ')}]`,
 					})) as ActaportWebhook;
-
 					if (!response?.id) {
-						this.logger?.warn?.('[ActaportTrigger] No subscription ID returned');
 						return false;
 					}
 
 					staticData.subscription = { id: response.id, events };
-					this.logger?.info?.(`[ActaportTrigger] Subscribed successfully (ID: ${response.id})`);
 					return true;
 				} catch (error) {
-					this.logger?.error?.(
-						`[ActaportTrigger] Failed to create webhook: ${(error as Error).message}`,
-					);
-					return false;
+					throw new NodeApiError(this.getNode(), {
+						message: 'Error while creating webhook subscription',
+						description: error instanceof Error ? error.message : 'Unknown error',
+					});
 				}
 			},
 
@@ -142,19 +132,16 @@ export class ActaportTrigger implements INodeType {
 				const subscription = staticData.subscription;
 
 				if (!subscription?.id) {
-					this.logger?.info?.('[ActaportTrigger] No existing subscription to delete');
 					return true;
 				}
 
 				try {
 					await actaportApiRequest.call(this, 'DELETE', `/webhooks/${subscription.id}`);
-					this.logger?.info?.(`[ActaportTrigger] Deleted webhook (ID: ${subscription.id})`);
 					delete staticData.subscription;
 					return true;
+					// Catch errors but return false to avoid blocking workflow deactivation
+					// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				} catch (error) {
-					this.logger?.error?.(
-						`[ActaportTrigger] Failed to delete webhook: ${(error as Error).message}`,
-					);
 					return false;
 				}
 			},
@@ -166,7 +153,6 @@ export class ActaportTrigger implements INodeType {
 	 */
 	async webhook(this: IWebhookFunctions) {
 		const bodyData = this.getBodyData();
-		this.logger?.info?.('[ActaportTrigger] Incoming webhook event received');
 		return { workflowData: [[{ json: bodyData }]] };
 	}
 }

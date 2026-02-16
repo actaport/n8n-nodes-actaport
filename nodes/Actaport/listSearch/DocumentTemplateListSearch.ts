@@ -6,25 +6,25 @@ import {
 } from 'n8n-workflow';
 import { actaportApiRequest } from '../GenericFunctions';
 
-type ContactSearchItem = {
+type DocumentTemplateSearchItem = {
 	id: string;
-	anzeigename: string;
+	name: string;
 };
 
-type ContactSearchResponse = {
+type DocumentTemplateSearchResponse = {
 	totalElements: number;
-	content: ContactSearchItem[];
+	content: DocumentTemplateSearchItem[];
 };
 
-export async function getContacts(
+export async function getDocumentTemplates(
 	this: ILoadOptionsFunctions,
 	filter?: string,
 	paginationToken?: string,
 ): Promise<INodeListSearchResult> {
 	const page = paginationToken ? +paginationToken : 0;
-	const per_page = 100;
+	const per_page = 20;
 
-	let responseData: ContactSearchResponse = {
+	let responseData: DocumentTemplateSearchResponse = {
 		content: [],
 		totalElements: 0,
 	};
@@ -38,22 +38,21 @@ export async function getContacts(
 		responseData = (await actaportApiRequest.call(
 			this,
 			'GET',
-			'/kontakte',
+			'/vorlagen',
 			{},
 			qs,
 			undefined,
-		)) as ContactSearchResponse;
+		)) as DocumentTemplateSearchResponse;
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), {
-			message: 'Error while fetching contacts',
-			description: error instanceof Error ? error.message : 'Unknown error',
-		});
+		throw new NodeApiError(this.getNode(), { message: 'Error fetching document templates', error });
 	}
 
-	const results: INodeListSearchItems[] = responseData.content.map((item: ContactSearchItem) => ({
-		name: item.anzeigename,
-		value: item.id,
-	}));
+	const results: INodeListSearchItems[] = responseData.content.map(
+		(item: DocumentTemplateSearchItem) => ({
+			name: item.name,
+			value: item.id,
+		}),
+	);
 
 	const hasNextPage = (page + 1) * per_page < responseData.totalElements;
 	const nextPaginationToken = hasNextPage ? String(page + 1) : undefined;

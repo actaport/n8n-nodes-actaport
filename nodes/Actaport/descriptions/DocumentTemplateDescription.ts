@@ -1,53 +1,41 @@
-import type { INodeProperties } from 'n8n-workflow';
+import { INodeProperties } from 'n8n-workflow';
 
-const showOnlyForNote = {
-	resource: ['note'],
-};
-
-export const noteDescription: INodeProperties[] = [
+export const documentTemplateDescription: INodeProperties[] = [
 	{
 		displayName: 'Operation',
 		name: 'operation',
 		type: 'options',
 		noDataExpression: true,
-		displayOptions: { show: showOnlyForNote },
-		options: [
-			{
-				name: 'Create',
-				value: 'create',
-				action: 'Create note',
-				description: 'Create a new note',
-				routing: {
-					request: {
-						method: 'POST',
-						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/notizen',
-					},
-				},
+		displayOptions: {
+			show: {
+				resource: ['documentTemplate'],
 			},
+		},
+		options: [
 			{
 				name: 'Get',
 				value: 'get',
-				action: 'Get note',
-				description: 'Retrieve a single note',
+				action: 'Get document template',
+				description: 'Get a single document template',
 				routing: {
 					request: {
 						method: 'GET',
-						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/notizen/{{$parameter["id"]}}',
+						url: '=/v1/vorlagen/{{$parameter["id"]}}',
 					},
 				},
 			},
 			{
 				name: 'Get Many',
 				value: 'getAll',
-				action: 'Get notes',
-				description: 'Retrieve many notes',
+				action: 'Get document templates',
+				description: 'Retrieve many document templates',
 				routing: {
 					request: {
 						method: 'GET',
-						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/notizen',
+						url: '=/v1/vorlagen',
 						arrayFormat: 'repeat',
 						qs: {
-							size: "={{ $parameter['returnAll'] ? 100 : $parameter['size'] }}",
+							size: "={{ $parameter['returnAll'] ? 50 : $parameter['size'] }}",
 						},
 					},
 					send: {
@@ -71,7 +59,7 @@ export const noteDescription: INodeProperties[] = [
 								request: {
 									qs: {
 										page: '={{ ($response.body?.number ?? -1) + 1 }}',
-										size: '={{ $response.body?.size ?? 100 }}',
+										size: '={{ $response.body?.size ?? 50 }}',
 										filter: '={{ $request.qs?.filter }}',
 										sort: '={{ $request.qs?.sort }}',
 									},
@@ -81,62 +69,8 @@ export const noteDescription: INodeProperties[] = [
 					},
 				},
 			},
-			{
-				name: 'Update',
-				value: 'update',
-				action: 'Update note',
-				description: 'Update an existing note',
-				routing: {
-					request: {
-						method: 'PUT',
-						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/notizen/{{$parameter["id"]}}',
-					},
-				},
-			},
 		],
 		default: 'getAll',
-	},
-	{
-		displayName: 'Sequential Number',
-		name: 'laufendeNummer',
-		type: 'string',
-		required: true,
-		displayOptions: {
-			show: {
-				operation: ['create', 'get', 'getAll', 'update'],
-				resource: ['note'],
-			},
-		},
-		default: '',
-		description: 'Sequential Number of the case',
-	},
-	{
-		displayName: 'Reference Year',
-		name: 'bezugsJahr',
-		type: 'number',
-		required: true,
-		displayOptions: {
-			show: {
-				operation: ['create', 'get', 'getAll', 'update'],
-				resource: ['note'],
-			},
-		},
-		default: '',
-		description: 'Reference year of the case',
-	},
-	{
-		displayName: 'ID',
-		name: 'id',
-		required: true,
-		description: 'ID of the note',
-		default: '',
-		type: 'string',
-		displayOptions: {
-			show: {
-				operation: ['get', 'update'],
-				resource: ['note'],
-			},
-		},
 	},
 	{
 		displayName: 'Page',
@@ -153,7 +87,7 @@ export const noteDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: ['getAll'],
-				resource: ['note'],
+				resource: ['documentTemplate'],
 				returnAll: [false],
 			},
 		},
@@ -173,7 +107,7 @@ export const noteDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: ['getAll'],
-				resource: ['note'],
+				resource: ['documentTemplate'],
 				returnAll: [false],
 			},
 		},
@@ -189,7 +123,7 @@ export const noteDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: ['getAll'],
-				resource: ['note'],
+				resource: ['documentTemplate'],
 			},
 		},
 		placeholder: 'Add Filter',
@@ -243,7 +177,7 @@ export const noteDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: ['getAll'],
-				resource: ['note'],
+				resource: ['documentTemplate'],
 			},
 		},
 		placeholder: 'Add Sort Field',
@@ -290,66 +224,21 @@ export const noteDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: ['getAll'],
-				resource: ['note'],
+				resource: ['documentTemplate'],
 			},
 		},
 	},
 	{
-		displayName: 'Title',
-		name: 'titel',
-		type: 'string',
+		displayName: 'ID',
+		name: 'id',
+		required: true,
+		description: 'ID of the document template',
 		default: '',
-		required: true,
-		routing: {
-			send: {
-				property: 'titel',
-				type: 'body',
-			},
-		},
-		displayOptions: {
-			show: {
-				operation: ['create', 'update'],
-				resource: ['note'],
-			},
-		},
-	},
-	{
-		displayName: 'Type',
-		required: true,
-		name: 'type',
-		type: 'options',
-		default: 'AKTENNOTIZ',
-		options: [
-			{ name: 'Aktennotiz', value: 'AKTENNOTIZ' },
-			{ name: 'Terminnotiz', value: 'TERMINNOTIZ' },
-			{ name: 'Telefonnotiz', value: 'TELEFONNOTIZ' },
-		],
-		routing: {
-			send: { property: 'typ', type: 'body' },
-		},
-		displayOptions: {
-			show: {
-				operation: ['create', 'update'],
-				resource: ['note'],
-			},
-		},
-	},
-	{
-		displayName: 'Description',
-		name: 'description',
 		type: 'string',
-		default: '',
-		required: true,
-		routing: {
-			send: {
-				property: 'beschreibung',
-				type: 'body',
-			},
-		},
 		displayOptions: {
 			show: {
-				operation: ['create', 'update'],
-				resource: ['note'],
+				operation: ['get'],
+				resource: ['documentTemplate'],
 			},
 		},
 	},

@@ -1,4 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
+import { INodeProperties, NodeApiError } from 'n8n-workflow';
 
 const showOnlyForCaseFile = {
 	resource: ['caseFile'],
@@ -26,6 +26,38 @@ export const caseFileDescription: INodeProperties[] = [
 						method: 'GET',
 						url: '=/v1/akten',
 						arrayFormat: 'repeat',
+						qs: {
+							size: "={{ $parameter['returnAll'] ? 50 : $parameter['size'] }}",
+						},
+					},
+					send: {
+						paginate: "={{ $parameter['returnAll'] }}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'content',
+								},
+							},
+						],
+					},
+					operations: {
+						pagination: {
+							type: 'generic',
+							properties: {
+								continue: '={{ !$response.body?.last }}',
+								request: {
+									qs: {
+										page: '={{ ($response.body?.number ?? -1) + 1 }}',
+										size: '={{ $response.body?.size ?? 50 }}',
+										filter: '={{ $request.qs?.filter }}',
+										sort: '={{ $request.qs?.sort }}',
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -112,6 +144,7 @@ export const caseFileDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				...showOnlyForCaseFileGetAll,
+				returnAll: [false],
 			},
 		},
 	},
@@ -130,6 +163,7 @@ export const caseFileDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				...showOnlyForCaseFileGetAll,
+				returnAll: [false],
 			},
 		},
 	},
@@ -235,6 +269,19 @@ export const caseFileDescription: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		displayOptions: {
+			show: {
+				...showOnlyForCaseFile,
+				operation: ['getAll'],
+			},
+		},
+	},
+	{
 		displayName: 'File Name',
 		name: 'aktenbezeichnung',
 		type: 'string',
@@ -269,7 +316,7 @@ export const caseFileDescription: INodeProperties[] = [
 			send: {
 				property: 'aktenbezeichnung',
 				type: 'body',
-				value: '={{ $value || undefined }}',
+				value: '={{ $value === "" ? undefined : $value }}',
 			},
 		},
 	},
@@ -288,7 +335,7 @@ export const caseFileDescription: INodeProperties[] = [
 			send: {
 				property: 'alternativesAktenzeichen',
 				type: 'body',
-				value: '={{ $value }}',
+				value: '={{ $value === "" ? undefined : $value }}',
 			},
 		},
 	},
@@ -337,7 +384,7 @@ export const caseFileDescription: INodeProperties[] = [
 			send: {
 				property: 'sachbearbeiter',
 				type: 'body',
-				value: '={{ $value ? { id: $value } : undefined }}',
+				value: '={{ $value === "" ? undefined : { id: $value } }}',
 			},
 		},
 	},
@@ -386,20 +433,28 @@ export const caseFileDescription: INodeProperties[] = [
 			send: {
 				property: 'assistenzen',
 				type: 'body',
-				value: '={{ $value ? $value.map(id => ({ id })) : undefined }}',
+				value: '={{ $value && $value.length > 0 ? $value.map(id => ({ id })) : undefined }}',
 			},
 		},
 	},
 	{
 		displayName: 'Involved Parties',
+		required: true,
 		name: 'beteiligte',
 		type: 'fixedCollection',
 		typeOptions: { multipleValues: true },
-		default: {},
+		default: {
+			beteiligter: [
+				{
+					kontaktId: { mode: 'id', value: '' },
+					rollen: { fields: { hauptrolle: 'Mandant', unterrolle: '' } },
+				},
+			],
+		},
 		displayOptions: {
 			show: {
 				...showOnlyForCaseFile,
-				operation: ['create', 'update'],
+				operation: ['create'],
 			},
 		},
 		options: [
@@ -435,7 +490,12 @@ export const caseFileDescription: INodeProperties[] = [
 						displayName: 'Roles',
 						name: 'rollen',
 						type: 'fixedCollection',
-						default: {},
+						default: {
+							fields: {
+								hauptrolle: 'Mandant',
+								unterrolle: '',
+							},
+						},
 						typeOptions: { multipleValues: false },
 						options: [
 							{
@@ -552,8 +612,8 @@ export const caseFileDescription: INodeProperties[] = [
 										default: {},
 										options: [
 											{
-												displayName: '',
-												name: 'Claim Number',
+												displayName: 'Claim Number',
+												name: 'schadensnummer',
 												type: 'string',
 												default: '',
 											},
@@ -574,6 +634,27 @@ export const caseFileDescription: INodeProperties[] = [
 		],
 		routing: {
 			send: {
+				preSend: [
+					async function (this, requestOptions) {
+						const beteiligte = this.getNodeParameter('beteiligte');
+
+						if (typeof beteiligte !== 'object' || beteiligte === null) {
+							throw new NodeApiError(this.getNode(), {
+								message: 'At least one involved party must be provided.',
+							});
+						}
+
+						const items = (beteiligte as { beteiligter?: unknown }).beteiligter;
+
+						if (!Array.isArray(items) || items.length === 0) {
+							throw new NodeApiError(this.getNode(), {
+								message: 'At least one involved party must be provided.',
+							});
+						}
+
+						return requestOptions;
+					},
+				],
 				property: 'beteiligte',
 				type: 'body',
 				value: `={{ 
@@ -605,6 +686,247 @@ export const caseFileDescription: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Involved Parties',
+		required: true,
+		name: 'beteiligte',
+		type: 'fixedCollection',
+		typeOptions: { multipleValues: true },
+		default: [],
+		displayOptions: {
+			show: {
+				...showOnlyForCaseFile,
+				operation: ['update'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Involved Party',
+				name: 'beteiligter',
+				values: [
+					{
+						displayName: 'Contact ID',
+						name: 'kontaktId',
+						type: 'resourceLocator',
+						required: true,
+						default: { mode: 'id', value: '' },
+						modes: [
+							{
+								displayName: 'From List',
+								name: 'list',
+								type: 'list',
+								typeOptions: {
+									searchListMethod: 'getContacts',
+									searchable: true,
+								},
+							},
+							{
+								displayName: 'By ID',
+								name: 'id',
+								type: 'string',
+								placeholder: 'Enter contact ID',
+							},
+						],
+					},
+					{
+						displayName: 'Roles',
+						name: 'rollen',
+						type: 'fixedCollection',
+						default: {
+							fields: {
+								hauptrolle: 'Mandant',
+								unterrolle: '',
+							},
+						},
+						typeOptions: { multipleValues: false },
+						options: [
+							{
+								displayName: 'Rollen',
+								name: 'fields',
+								values: [
+									{
+										displayName: 'Main Role',
+										name: 'hauptrolle',
+										type: 'options',
+										required: true,
+										default: 'Mandant',
+										options: [
+											{ name: 'Gegner', value: 'Gegner' },
+											{ name: 'Gericht/Behörde', value: 'Gericht/Behörde' },
+											{ name: 'Mandant', value: 'Mandant' },
+											{ name: 'Mandant/Gegner', value: 'Mandant_Gegner' },
+											{ name: 'Sonstige Beteiligte', value: 'Sonstige Beteiligte' },
+										],
+									},
+									{
+										displayName: 'Sub Role',
+										name: 'unterrolle',
+										type: 'string',
+										required: true,
+										default: '',
+									},
+								],
+							},
+						],
+					},
+					{
+						displayName: 'Details',
+						name: 'details',
+						type: 'collection',
+						default: {},
+						options: [
+							{
+								displayName: 'File Reference',
+								name: 'aktenzeichen',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Tax Treatment',
+								name: 'umsatzsteuerlicheBehandlung',
+								type: 'options',
+								default: 'DE',
+								options: [
+									{ name: 'DE', value: 'DE' },
+									{ name: 'EU', value: 'EU' },
+									{ name: 'Third Country', value: 'DRITTLAND' },
+								],
+							},
+							{
+								displayName: 'Tax Deductible',
+								name: 'vorsteuerabzug',
+								type: 'boolean',
+								default: false,
+							},
+							{
+								displayName: 'Contact Persons',
+								name: 'ansprechpartner',
+								type: 'fixedCollection',
+								default: {},
+								typeOptions: { multipleValues: true },
+								options: [
+									{
+										displayName: 'Contact Person',
+										name: 'person',
+										values: [
+											{
+												displayName: 'Contact ID',
+												name: 'kontaktId',
+												type: 'string',
+												required: true,
+												default: '',
+											},
+										],
+									},
+								],
+							},
+						],
+					},
+					{
+						displayName: 'Sub-Involved Parties',
+						name: 'unterbeteiligte',
+						type: 'fixedCollection',
+						default: {},
+						typeOptions: { multipleValues: true },
+						options: [
+							{
+								displayName: 'Sub-Involved Party',
+								name: 'ub',
+								values: [
+									{
+										displayName: 'Contact ID',
+										name: 'kontaktId',
+										type: 'string',
+										required: true,
+										default: '',
+									},
+									{
+										displayName: 'Role',
+										name: 'rolle',
+										type: 'string',
+										required: true,
+										default: '',
+									},
+									{
+										displayName: 'Details',
+										name: 'details',
+										type: 'collection',
+										default: {},
+										options: [
+											{
+												displayName: 'Claim Number',
+												name: 'schadensnummer',
+												type: 'string',
+												default: '',
+											},
+											{
+												displayName: 'Insurance Number',
+												name: 'versicherungsnummer',
+												type: 'string',
+												default: '',
+											},
+										],
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+		],
+		routing: {
+			send: {
+				property: 'beteiligte',
+				type: 'body',
+				value: `={{ 
+  $value.beteiligter
+    ? $value.beteiligter.map(b => ({
+        kontakt: { id: Number(b.kontaktId?.value) || undefined },
+        rolle: {
+          hauptrolle: b.rollen?.fields?.hauptrolle,
+          unterrolle: b.rollen?.fields?.unterrolle,
+        },
+        details: {
+          aktenzeichen: b.details?.aktenzeichen,
+          umsatzsteuerlicheBehandlung: b.details?.umsatzsteuerlicheBehandlung,
+          vorsteuerabzug: b.details?.vorsteuerabzug,
+          ansprechpartner: (b.details?.ansprechpartner?.person || []).map(p => ({ id: Number(p.kontaktId) })),
+        },
+        unterbeteiligte: (b.unterbeteiligte?.ub || []).map(u => ({
+          kontakt: { id: Number(u.kontaktId) },
+          rolle: u.rolle,
+          details: {
+            schadensnummer: u.details?.schadensnummer || undefined,
+            versicherungsnummer: u.details?.versicherungsnummer || undefined,
+          },
+        })),
+      }))
+    : undefined
+}}`,
+				preSend: [
+					async function (this, requestOptions) {
+						const beteiligte = this.getNodeParameter('beteiligte');
+
+						if (typeof beteiligte !== 'object' || beteiligte === null) {
+							throw new NodeApiError(this.getNode(), {
+								message: 'At least one involved party must be provided for update.',
+							});
+						}
+
+						const items = (beteiligte as { beteiligter?: unknown }).beteiligter;
+
+						if (Array.isArray(items) && items.length === 0) {
+							throw new NodeApiError(this.getNode(), {
+								message: 'At least one involved party must be provided for update.',
+							});
+						}
+
+						return requestOptions;
+					},
+				],
+			},
+		},
+	},
+	{
 		displayName: 'File Role',
 		name: 'aktenrolle',
 		type: 'options',
@@ -616,7 +938,7 @@ export const caseFileDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				...showOnlyForCaseFile,
-				operation: ['create', 'update'],
+				operation: ['create'],
 			},
 		},
 		routing: {
@@ -624,6 +946,30 @@ export const caseFileDescription: INodeProperties[] = [
 				property: 'aktenrolle',
 				type: 'body',
 				value: '={{ $value }}',
+			},
+		},
+	},
+	{
+		displayName: 'File Role',
+		name: 'aktenrolle',
+		type: 'options',
+		default: '',
+		options: [
+			{ name: '-', value: '' },
+			{ name: 'Main File', value: 'HAUPTAKTE' },
+			{ name: 'Sub File', value: 'UNTERAKTE' },
+		],
+		displayOptions: {
+			show: {
+				...showOnlyForCaseFile,
+				operation: ['update'],
+			},
+		},
+		routing: {
+			send: {
+				property: 'aktenrolle',
+				type: 'body',
+				value: '={{ $value === "" ? undefined : $value }}',
 			},
 		},
 	},
@@ -732,6 +1078,7 @@ export const caseFileDescription: INodeProperties[] = [
 												name: 'value',
 												type: 'string',
 												default: '',
+												required: true,
 											},
 										],
 									},

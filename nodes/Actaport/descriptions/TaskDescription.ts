@@ -1,4 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
+import { INodeProperties, NodeApiError } from 'n8n-workflow';
 
 const showOnlyForTask = {
 	resource: ['task'],
@@ -56,10 +56,41 @@ export const taskDescription: INodeProperties[] = [
 						method: 'GET',
 						url: '=/v1/aufgaben',
 						arrayFormat: 'repeat',
+						qs: {
+							size: "={{ $parameter['returnAll'] ? 100 : $parameter['size'] }}",
+						},
+					},
+					send: {
+						paginate: "={{ $parameter['returnAll'] }}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'content',
+								},
+							},
+						],
+					},
+					operations: {
+						pagination: {
+							type: 'generic',
+							properties: {
+								continue: '={{ !$response.body?.last }}',
+								request: {
+									qs: {
+										page: '={{ ($response.body?.number ?? -1) + 1 }}',
+										size: '={{ $response.body?.size ?? 100 }}',
+										filter: '={{ $request.qs?.filter }}',
+										sort: '={{ $request.qs?.sort }}',
+									},
+								},
+							},
+						},
 					},
 				},
 			},
-
 			{
 				name: 'Update',
 				value: 'update',
@@ -145,6 +176,7 @@ export const taskDescription: INodeProperties[] = [
 			show: {
 				operation: ['getAll'],
 				resource: ['task'],
+				returnAll: [false],
 			},
 		},
 	},
@@ -164,6 +196,7 @@ export const taskDescription: INodeProperties[] = [
 			show: {
 				operation: ['getAll'],
 				resource: ['task'],
+				returnAll: [false],
 			},
 		},
 	},
@@ -271,6 +304,19 @@ export const taskDescription: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		displayOptions: {
+			show: {
+				operation: ['getAll'],
+				resource: ['task'],
+			},
+		},
+	},
+	{
 		displayName: 'Title',
 		name: 'titel',
 		type: 'string',
@@ -303,10 +349,10 @@ export const taskDescription: INodeProperties[] = [
 		required: true,
 		default: 'VERFUEGUNG',
 		options: [
-			{ name: 'Verfügung', value: 'VERFUEGUNG' },
-			{ name: 'Niedrig', value: 'NIEDRIG' },
-			{ name: 'Neutral', value: 'NEUTRAL' },
 			{ name: 'Hoch', value: 'HOCH' },
+			{ name: 'Neutral', value: 'NEUTRAL' },
+			{ name: 'Niedrig', value: 'NIEDRIG' },
+			{ name: 'Verfügung', value: 'VERFUEGUNG' },
 		],
 		routing: {
 			send: { type: 'body', property: 'priorisierung' },
@@ -348,6 +394,21 @@ export const taskDescription: INodeProperties[] = [
 		],
 		routing: {
 			send: {
+				preSend: [
+					async function (this, requestOptions) {
+						const empfaenger = this.getNodeParameter('empfaenger', 0) as {
+							empfaengerFields?: { id?: string; type?: string };
+						};
+
+						const fields = empfaenger?.empfaengerFields;
+						if (!fields) {
+							throw new NodeApiError(this.getNode(), {
+								message: 'Recipient must be set when creating a task.',
+							});
+						}
+						return requestOptions;
+					},
+				],
 				type: 'body',
 				property: 'empfaenger',
 				value: '={{ $value.empfaengerFields }}',
@@ -364,7 +425,7 @@ export const taskDescription: INodeProperties[] = [
 			send: {
 				type: 'body',
 				property: 'titel',
-				value: '={{ $value ?? undefined }}',
+				value: '={{ $value === "" ? undefined : $value }}',
 			},
 		},
 		displayOptions: { show: { ...showUpdate } },
@@ -387,18 +448,19 @@ export const taskDescription: INodeProperties[] = [
 		displayName: 'Prioritisation',
 		name: 'priorisierung',
 		type: 'options',
-		default: 'VERFUEGUNG',
+		default: '',
 		options: [
-			{ name: 'Verfügung', value: 'VERFUEGUNG' },
-			{ name: 'Niedrig', value: 'NIEDRIG' },
-			{ name: 'Neutral', value: 'NEUTRAL' },
+			{ name: '-', value: '' },
 			{ name: 'Hoch', value: 'HOCH' },
+			{ name: 'Neutral', value: 'NEUTRAL' },
+			{ name: 'Niedrig', value: 'NIEDRIG' },
+			{ name: 'Verfügung', value: 'VERFUEGUNG' },
 		],
 		routing: {
 			send: {
 				type: 'body',
 				property: 'priorisierung',
-				value: '={{ $value ?? undefined }}',
+				value: '={{ $value === "" ? undefined : $value }}',
 			},
 		},
 		displayOptions: { show: { ...showUpdate } },
@@ -415,11 +477,12 @@ export const taskDescription: INodeProperties[] = [
 				displayName: 'Recipient',
 				name: 'empfaengerFields',
 				values: [
-					{ displayName: 'ID', name: 'id', type: 'string', default: '' },
+					{ displayName: 'ID', name: 'id', type: 'string', default: '', required: true },
 					{
 						displayName: 'Type',
 						name: 'type',
 						type: 'options',
+						required: true,
 						default: 'BENUTZER',
 						options: [
 							{ name: 'Benutzer', value: 'BENUTZER' },
@@ -486,7 +549,7 @@ export const taskDescription: INodeProperties[] = [
 					send: {
 						type: 'body',
 						property: 'beschreibung',
-						value: '={{ $value ?? undefined }}',
+						value: '={{ $value === "" ? undefined : $value }}',
 					},
 				},
 			},
@@ -506,6 +569,7 @@ export const taskDescription: INodeProperties[] = [
 								name: 'id',
 								type: 'string',
 								default: '',
+								required: true,
 							},
 						],
 					},
@@ -533,6 +597,7 @@ export const taskDescription: INodeProperties[] = [
 								name: 'id',
 								type: 'string',
 								default: '',
+								required: true,
 							},
 						],
 					},
@@ -561,6 +626,7 @@ export const taskDescription: INodeProperties[] = [
 								name: 'id',
 								type: 'string',
 								default: '',
+								required: true,
 							},
 						],
 					},
@@ -589,6 +655,7 @@ export const taskDescription: INodeProperties[] = [
 								name: 'id',
 								type: 'string',
 								default: '',
+								required: true,
 							},
 						],
 					},
@@ -615,7 +682,7 @@ export const taskDescription: INodeProperties[] = [
 					send: {
 						type: 'body',
 						property: 'status',
-						value: '={{ $value ?? undefined }}',
+						value: '={{ $value === "" ? undefined : $value }}',
 					},
 				},
 			},

@@ -1,5 +1,6 @@
-import { INodeProperties } from 'n8n-workflow';
+import { INodeParameterResourceLocator, INodeProperties, NodeOperationError } from 'n8n-workflow';
 import { preSendUpload } from '../helpers/DocumentUploadHelper';
+import { returnBinaryData } from '../helpers/DocumentDownloadHelper';
 
 const showOnlyForDocument = {
 	resource: ['document'],
@@ -14,6 +15,19 @@ export const documentDescription: INodeProperties[] = [
 		displayOptions: { show: showOnlyForDocument },
 		options: [
 			{
+				name: 'Create',
+				value: 'create',
+				action: 'Create document',
+				description:
+					'Create a new document with template if supported. If no template is specified, a blank document will be created.',
+				routing: {
+					request: {
+						method: 'POST',
+						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/dokumente/neu',
+					},
+				},
+			},
+			{
 				name: 'Download',
 				value: 'download',
 				action: 'Download document',
@@ -22,6 +36,11 @@ export const documentDescription: INodeProperties[] = [
 					request: {
 						method: 'GET',
 						url: '=/v1/documents/{{$parameter["id"]}}',
+						returnFullResponse: true,
+						encoding: 'arraybuffer',
+					},
+					output: {
+						postReceive: [returnBinaryData],
 					},
 				},
 			},
@@ -47,6 +66,38 @@ export const documentDescription: INodeProperties[] = [
 						method: 'GET',
 						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/dokumente/uebersicht',
 						arrayFormat: 'repeat',
+						qs: {
+							size: "={{ $parameter['returnAll'] ? 50 : $parameter['size'] }}",
+						},
+					},
+					send: {
+						paginate: "={{ $parameter['returnAll'] }}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'content',
+								},
+							},
+						],
+					},
+					operations: {
+						pagination: {
+							type: 'generic',
+							properties: {
+								continue: '={{ !$response.body?.last }}',
+								request: {
+									qs: {
+										page: '={{ ($response.body?.number ?? -1) + 1 }}',
+										size: '={{ $response.body?.size ?? 100 }}',
+										filter: '={{ $request.qs?.filter }}',
+										sort: '={{ $request.qs?.sort }}',
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -90,7 +141,7 @@ export const documentDescription: INodeProperties[] = [
 		required: true,
 		displayOptions: {
 			show: {
-				operation: ['get', 'getAll', 'upload'],
+				operation: ['create', 'get', 'getAll', 'upload'],
 				resource: ['document'],
 			},
 		},
@@ -104,7 +155,7 @@ export const documentDescription: INodeProperties[] = [
 		required: true,
 		displayOptions: {
 			show: {
-				operation: ['get', 'getAll', 'upload'],
+				operation: ['create', 'get', 'getAll', 'upload'],
 				resource: ['document'],
 			},
 		},
@@ -141,6 +192,7 @@ export const documentDescription: INodeProperties[] = [
 			show: {
 				operation: ['getAll'],
 				resource: ['document'],
+				returnAll: [false],
 			},
 		},
 	},
@@ -160,6 +212,7 @@ export const documentDescription: INodeProperties[] = [
 			show: {
 				operation: ['getAll'],
 				resource: ['document'],
+				returnAll: [false],
 			},
 		},
 	},
@@ -263,6 +316,19 @@ export const documentDescription: INodeProperties[] = [
 					'    .filter(s => s.field && s.direction)' +
 					'    .map(s => `${s.field},${s.direction}`)' +
 					' : undefined }}',
+			},
+		},
+	},
+	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		displayOptions: {
+			show: {
+				resource: ['document'],
+				operation: ['getAll'],
 			},
 		},
 	},
@@ -413,5 +479,326 @@ export const documentDescription: INodeProperties[] = [
 					'Name of the folder to upload the document into. If not specified, the document will be uploaded to the default folder.',
 			},
 		],
+	},
+	{
+		displayName: 'Name',
+		name: 'documentName',
+		type: 'string',
+		default: '',
+		required: true,
+		description: 'Name of the document to create',
+		displayOptions: {
+			show: {
+				operation: ['create'],
+				resource: ['document'],
+			},
+		},
+		routing: {
+			send: {
+				property: 'name',
+				type: 'body',
+				value: '={{ $value === "" ? undefined : $value }}',
+			},
+		},
+	},
+	{
+		displayName: 'Type',
+		name: 'documentType',
+		required: true,
+		type: 'options',
+		default: 'WORD',
+		description: 'Type of the document to create',
+		displayOptions: {
+			show: {
+				operation: ['create'],
+				resource: ['document'],
+			},
+		},
+		options: [
+			{
+				name: 'Word Document',
+				value: 'WORD',
+			},
+			{
+				name: 'Excel Spreadsheet',
+				value: 'EXCEL',
+			},
+			{
+				name: 'PowerPoint Presentation',
+				value: 'POWERPOINT',
+			},
+		],
+		routing: {
+			send: {
+				property: 'dokumenttyp',
+				type: 'body',
+			},
+		},
+	},
+	{
+		displayName: 'Folder',
+		name: 'folderId',
+		type: 'resourceLocator',
+		required: true,
+		default: { mode: 'list', value: '' },
+		displayOptions: {
+			show: {
+				operation: ['create'],
+				resource: ['document'],
+			},
+		},
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				typeOptions: {
+					searchListMethod: 'getFolders',
+					searchable: true,
+				},
+			},
+			{
+				displayName: 'By ID',
+				name: 'id',
+				type: 'string',
+				placeholder: 'Enter Folder ID',
+			},
+		],
+		routing: {
+			send: {
+				property: 'ordnerId',
+				type: 'body',
+			},
+		},
+	},
+	{
+		displayName: 'Letterhead Template',
+		name: 'letterheadTemplateId',
+		type: 'resourceLocator',
+		default: { mode: 'list', value: '' },
+		displayOptions: {
+			show: {
+				operation: ['create'],
+				resource: ['document'],
+				documentType: ['WORD'],
+			},
+		},
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				typeOptions: {
+					searchListMethod: 'getDocumentTemplates',
+					searchable: true,
+				},
+			},
+			{
+				displayName: 'By ID',
+				name: 'id',
+				type: 'string',
+				placeholder: 'Enter Letterhead Template ID',
+			},
+		],
+		routing: {
+			send: {
+				preSend: [
+					async function (this, requestOptions) {
+						const templateParam = this.getNodeParameter(
+							'templateId',
+							{},
+						) as INodeParameterResourceLocator;
+						const templateId = templateParam?.value;
+
+						const letterheadTemplateParam = this.getNodeParameter(
+							'letterheadTemplateId',
+							{},
+						) as INodeParameterResourceLocator;
+						const letterheadTemplateId = letterheadTemplateParam?.value;
+
+						if (letterheadTemplateId && !templateId) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Template must be specified when using a letterhead template.',
+								{ level: 'error' },
+							);
+						}
+						return requestOptions;
+					},
+				],
+				property: 'briefkopf',
+				type: 'body',
+				value: '={{ $value && $value !== "" ?  { id: $value } : undefined }}',
+			},
+		},
+	},
+	{
+		displayName: 'Template',
+		name: 'templateId',
+		type: 'resourceLocator',
+		default: { mode: 'list', value: '' },
+		displayOptions: {
+			show: {
+				operation: ['create'],
+				resource: ['document'],
+			},
+		},
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				typeOptions: {
+					searchListMethod: 'getDocumentTemplates',
+					searchable: true,
+				},
+			},
+			{
+				displayName: 'By ID',
+				name: 'id',
+				type: 'string',
+				placeholder: 'Enter Template ID',
+			},
+		],
+		routing: {
+			send: {
+				property: 'vorlage',
+				type: 'body',
+				value: '={{ $value && $value !== "" ?  { id: $value } : undefined }}',
+			},
+		},
+	},
+	{
+		displayName: 'Office Location',
+		name: 'officeLocationId',
+		type: 'resourceLocator',
+		default: { mode: 'list', value: '' },
+		description: 'Select the office location to use for document creation',
+		displayOptions: {
+			show: {
+				operation: ['create'],
+				resource: ['document'],
+			},
+		},
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				typeOptions: {
+					searchListMethod: 'getOfficeLocations',
+					searchable: false,
+				},
+			},
+			{
+				displayName: 'By ID',
+				name: 'id',
+				type: 'string',
+			},
+		],
+		routing: {
+			send: {
+				property: 'standort',
+				type: 'body',
+				value: '={{ $value.value && $value.value !== "" ? { id: $value.value } : undefined }}',
+			},
+		},
+	},
+	{
+		displayName: 'Template Placeholders',
+		name: 'templatePlaceholders',
+		type: 'fixedCollection',
+		placeholder: 'Add Template Placeholder',
+		default: {},
+		typeOptions: {
+			multipleValues: true,
+		},
+		displayOptions: {
+			show: {
+				operation: ['create'],
+				resource: ['document'],
+				documentType: ['WORD'],
+			},
+		},
+		options: [
+			{
+				name: 'placeholders',
+				displayName: 'Placeholders',
+				values: [
+					{
+						displayName: 'Placeholder Name',
+						name: 'placeholderName',
+						type: 'string',
+						default: '',
+						description: 'Name of the placeholder in the template',
+					},
+					{
+						displayName: 'Placeholder Value',
+						name: 'placeholderValue',
+						type: 'string',
+						default: '',
+						description: 'Value to replace the placeholder with',
+					},
+				],
+			},
+		],
+		routing: {
+			send: {
+				property: 'platzhalter',
+				type: 'body',
+				value:
+					'={{ Array.isArray($value?.placeholders) ' +
+					'? $value.placeholders' +
+					"    .filter(p => (p?.placeholderName ?? '').trim() && (p?.placeholderValue ?? '').trim())" +
+					'    .reduce((obj, p) => {' +
+					"      obj[(p.placeholderName ?? '').trim()] = (p.placeholderValue ?? '').trim();" +
+					'      return obj;' +
+					'    }, {})' +
+					': {} }}',
+			},
+		},
+	},
+	{
+		displayName: 'Metadata',
+		name: 'metadata',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				operation: ['create'],
+				resource: ['document'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Status',
+				name: 'status',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Typ',
+				name: 'typ',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Description',
+				name: 'beschreibung',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				default: '',
+			},
+		],
+		routing: {
+			send: {
+				property: 'details',
+				type: 'body',
+				value: '={{ $value && Object.keys($value).length ? $value : undefined }}',
+			},
+		},
 	},
 ];

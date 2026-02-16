@@ -35,7 +35,39 @@ export const deadlineDescription: INodeProperties[] = [
 					request: {
 						method: 'GET',
 						url: '=/v1/fristen',
-						arrayFormat: 'repeat'
+						arrayFormat: 'repeat',
+						qs: {
+							size: "={{ $parameter['returnAll'] ? 100 : $parameter['size'] }}",
+						},
+					},
+					send: {
+						paginate: "={{ $parameter['returnAll'] }}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'content',
+								},
+							},
+						],
+					},
+					operations: {
+						pagination: {
+							type: 'generic',
+							properties: {
+								continue: '={{ !$response.body?.last }}',
+								request: {
+									qs: {
+										page: '={{ ($response.body?.number ?? -1) + 1 }}',
+										size: '={{ $response.body?.size ?? 100 }}',
+										filter: '={{ $request.qs?.filter }}',
+										sort: '={{ $request.qs?.sort }}',
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -110,6 +142,7 @@ export const deadlineDescription: INodeProperties[] = [
 			show: {
 				operation: ['getAll'],
 				resource: ['deadline'],
+				returnAll: [false],
 			},
 		},
 	},
@@ -129,6 +162,7 @@ export const deadlineDescription: INodeProperties[] = [
 			show: {
 				operation: ['getAll'],
 				resource: ['deadline'],
+				returnAll: [false],
 			},
 		},
 	},
@@ -232,6 +266,19 @@ export const deadlineDescription: INodeProperties[] = [
 					'    .filter(s => s.field && s.direction)' +
 					'    .map(s => `${s.field},${s.direction}`)' +
 					' : undefined }}',
+			},
+		},
+	},
+	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		displayOptions: {
+			show: {
+				operation: ['getAll'],
+				resource: ['deadline'],
 			},
 		},
 	},

@@ -13,3 +13,4 @@ export * from './TaskDescription';
 export * from './CaseFileDescription';
 export * from './ContactDescription';
 export * from './FolderDescription';
+export * from './DocumentTemplateDescription';

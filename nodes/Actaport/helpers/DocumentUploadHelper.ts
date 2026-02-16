@@ -41,7 +41,6 @@ export async function preSendUpload(
 	}
 
 	if (fileBuffer.length > MAX_UPLOAD_SIZE) {
-		this.logger?.info('File size exceeds 50 MB limit.');
 		throw new NodeApiError(this.getNode(), {
 			message: 'The binary data exceeds the maximum allowed size of 50 MB.',
 		});

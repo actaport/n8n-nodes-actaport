@@ -1,4 +1,4 @@
-import { ILoadOptionsFunctions, INodeListSearchItems, INodeListSearchResult } from 'n8n-workflow';
+import {ILoadOptionsFunctions, INodeListSearchItems, INodeListSearchResult, NodeApiError} from 'n8n-workflow';
 import { actaportApiRequest } from '../GenericFunctions';
 
 type UserSearchItem = {
@@ -37,8 +37,10 @@ export async function getUsers(
 			undefined,
 		)) as UserSearchResponse;
 	} catch (error) {
-		this.logger?.warn('Error fetching users: ' + (error as Error).message);
-		// Ignore errors for user search
+		throw new NodeApiError(this.getNode(), {
+			message: 'Error while fetching users',
+			description: error instanceof Error ? error.message : 'Unknown error',
+		});
 	}
 
 	const results: INodeListSearchItems[] = responseData.content.map((item: UserSearchItem) => ({

@@ -43,6 +43,10 @@ export const ACTAPORT_EVENT_OPTIONS: INodePropertyOptions[] = [
 	{ name: 'Document Updated', value: 'document.changed' },
 	{ name: 'Invoice Created', value: 'rechnung.created' },
 	{ name: 'Invoice Updated', value: 'rechnung.changed' },
+	{ name: 'Resubmission Created', value: 'wiedervorlage.created' },
+	{ name: 'Resubmission Updated', value: 'wiedervorlage.changed' },
+	{ name: 'Task Created', value: 'aufgabe.created' },
+	{ name: 'Task Updated', value: 'aufgabe.changed' },
 	{ name: 'User Created', value: 'benutzer.created' },
 	{ name: 'User Updated', value: 'benutzer.changed' },
 ];
