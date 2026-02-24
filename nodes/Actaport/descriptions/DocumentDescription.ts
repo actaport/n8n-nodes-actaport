@@ -101,6 +101,51 @@ export const documentDescription: INodeProperties[] = [
 				},
 			},
 			{
+				name: 'Search',
+				value: 'search',
+				action: 'Search documents',
+				description:
+					'Search documents with a search term. The search will be performed on the document attributes and content.',
+				routing: {
+					request: {
+						method: 'GET',
+						url: '=/v1/documents/search',
+						qs: {
+							size: "={{ $parameter['returnAll'] ? 20 : $parameter['size'] }}",
+						},
+					},
+					send: {
+						paginate: "={{ $parameter['returnAll'] }}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'content',
+								},
+							},
+						],
+					},
+					operations: {
+						pagination: {
+							type: 'generic',
+							properties: {
+								continue: '={{ !$response.body?.last }}',
+								request: {
+									qs: {
+										page: '={{ ($response.body?.number ?? -1) + 1 }}',
+										size: '={{ $response.body?.size ?? 20 }}',
+										suchbegriff: '={{ $request.qs.suchbegriff }}',
+										aktennummer: '={{ $request.qs?.aktennummer }}',
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				name: 'Update',
 				value: 'update',
 				action: 'Update document',
@@ -189,7 +234,7 @@ export const documentDescription: INodeProperties[] = [
 		},
 		displayOptions: {
 			show: {
-				operation: ['getAll'],
+				operation: ['getAll', 'search'],
 				resource: ['document'],
 				returnAll: [false],
 			},
@@ -210,6 +255,30 @@ export const documentDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: ['getAll'],
+				resource: ['document'],
+				returnAll: [false],
+			},
+		},
+	},
+	{
+		displayName: 'Size',
+		name: 'size',
+		description: 'The size of the page to return',
+		default: 10,
+		type: 'number',
+		typeOptions: {
+			minValue: 1,
+			maxValue: 20,
+		},
+		routing: {
+			send: {
+				type: 'query',
+				property: 'size',
+			},
+		},
+		displayOptions: {
+			show: {
+				operation: ['search'],
 				resource: ['document'],
 				returnAll: [false],
 			},
@@ -319,6 +388,63 @@ export const documentDescription: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Search Term',
+		required: true,
+		name: 'searchTerm',
+		type: 'string',
+		placeholder: 'Enter search term to search in documents',
+		default: '',
+		description: 'Term to search for in documents',
+		routing: {
+			send: {
+				type: 'query',
+				property: 'suchbegriff',
+			},
+		},
+		displayOptions: {
+			show: {
+				resource: ['document'],
+				operation: ['search'],
+			},
+		},
+	},
+	{
+		displayName: 'Return Specific Case File Documents',
+		name: 'returnSpecificCaseFileDocuments',
+		type: 'boolean',
+		default: false,
+		description:
+			'Whether to return only documents associated with the specified case file or documents from the entire system',
+		displayOptions: {
+			show: {
+				resource: ['document'],
+				operation: ['search'],
+			},
+		},
+	},
+	{
+		displayName: 'Case File Number',
+		name: 'caseFileNumber',
+		required: true,
+		type: 'string',
+		default: '',
+		placeholder: 'Enter case file number to filter documents',
+		description: 'Case file number to filter documents associated with a specific case file',
+		displayOptions: {
+			show: {
+				resource: ['document'],
+				operation: ['search'],
+				returnSpecificCaseFileDocuments: [true],
+			},
+		},
+		routing: {
+			send: {
+				type: 'query',
+				property: 'aktennummer',
+			},
+		},
+	},
+	{
 		displayName: 'Return All',
 		name: 'returnAll',
 		type: 'boolean',
@@ -327,7 +453,7 @@ export const documentDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['document'],
-				operation: ['getAll'],
+				operation: ['getAll', 'search'],
 			},
 		},
 	},

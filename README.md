@@ -34,24 +34,24 @@ panel.
 
 ## Operations
 
-| Resource                              | Supported Operations                      |
-|---------------------------------------|-------------------------------------------|
-| **Additional Information Categories** | get, getAll                               |
-| **Case File**                         | get, getAll, create, update               |
-| **Collision Check**                   | get                                       |
-| **Contact**                           | get, getAll, create, update               |
-| **Deadline**                          | get, getAll, create, update, updateStatus |
-| **Document**                          | get, getAll, update, download, create     |
-| **Document Template**                 | get, getAll                               |
-| **Expense**                           | get, getAll, create, update, delete       |
-| **Folder**                            | get, getAll, create                       |
-| **Invoice**                           | get, getAll                               |
-| **Note**                              | get, getAll, create, update               |
-| **Resubmission**                      | get, getAll, create, update, updateStatus |
-| **RVG Fee**                           | get, getAll, create, update, delete       |
-| **Task**                              | get, getAll, create, update, updateStatus |
-| **Third Party Cost**                  | get, getAll, create, update, delete       |
-| **User**                              | get, getMe, getAll                        |
+| Resource                              | Supported Operations                          |
+|---------------------------------------|-----------------------------------------------|
+| **Additional Information Categories** | get, getAll                                   |
+| **Case File**                         | get, getAll, create, update                   |
+| **Collision Check**                   | get                                           |
+| **Contact**                           | get, getAll, create, update, search           |
+| **Deadline**                          | get, getAll, create, update, updateStatus     |
+| **Document**                          | get, getAll, update, download, create, search |
+| **Document Template**                 | get, getAll                                   |
+| **Expense**                           | get, getAll, create, update, delete           |
+| **Folder**                            | get, getAll, create                           |
+| **Invoice**                           | get, getAll                                   |
+| **Note**                              | get, getAll, create, update                   |
+| **Resubmission**                      | get, getAll, create, update, updateStatus     |
+| **RVG Fee**                           | get, getAll, create, update, delete           |
+| **Task**                              | get, getAll, create, update, updateStatus     |
+| **Third Party Cost**                  | get, getAll, create, update, delete           |
+| **User**                              | get, getMe, getAll                            |
 
 ## Credentials
 

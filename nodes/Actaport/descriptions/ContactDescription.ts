@@ -17,6 +17,18 @@ export const contactDescription: INodeProperties[] = [
 		displayOptions: { show: showOnlyForContact },
 		options: [
 			{
+				name: 'Create',
+				value: 'create',
+				action: 'Create a contact',
+				description: 'Creates a new contact with the given data',
+				routing: {
+					request: {
+						method: 'POST',
+						url: '=/v1/kontakte',
+					},
+				},
+			},
+			{
 				name: 'Get',
 				value: 'get',
 				action: 'Get a contact',
@@ -74,14 +86,46 @@ export const contactDescription: INodeProperties[] = [
 				},
 			},
 			{
-				name: 'Create',
-				value: 'create',
-				action: 'Create a contact',
-				description: 'Creates a new contact with the given data',
+				name: 'Search',
+				value: 'search',
+				action: 'Search contacts',
+				description:
+					'Search contacts with a search term. The search will be performed on certain fields of the contact.',
 				routing: {
 					request: {
-						method: 'POST',
-						url: '=/v1/kontakte',
+						method: 'GET',
+						url: '=/v1/kontakte/suche',
+						qs: {
+							size: "={{ $parameter['returnAll'] ? 20 : $parameter['size'] }}",
+						},
+					},
+					send: {
+						paginate: "={{ $parameter['returnAll'] }}",
+					},
+					output: {
+						postReceive: [
+							{
+								type: 'rootProperty',
+								properties: {
+									property: 'content',
+								},
+							},
+						],
+					},
+					operations: {
+						pagination: {
+							type: 'generic',
+							properties: {
+								continue: '={{ !$response.body?.last }}',
+								request: {
+									qs: {
+										page: '={{ ($response.body?.number ?? -1) + 1 }}',
+										size: '={{ $response.body?.size ?? 20 }}',
+										suchbegriff: '={{ $request.qs.suchbegriff }}',
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -114,7 +158,7 @@ export const contactDescription: INodeProperties[] = [
 		},
 		displayOptions: {
 			show: {
-				operation: ['getAll'],
+				operation: ['getAll', 'search'],
 				resource: ['contact'],
 				returnAll: [false],
 			},
@@ -137,6 +181,51 @@ export const contactDescription: INodeProperties[] = [
 				operation: ['getAll'],
 				resource: ['contact'],
 				returnAll: [false],
+			},
+		},
+	},
+	{
+		displayName: 'Size',
+		name: 'size',
+		description: 'The size of the page to return',
+		default: 10,
+		type: 'number',
+		typeOptions: {
+			minValue: 1,
+			maxValue: 20,
+		},
+		routing: {
+			send: {
+				type: 'query',
+				property: 'size',
+			},
+		},
+		displayOptions: {
+			show: {
+				operation: ['search'],
+				resource: ['contact'],
+				returnAll: [false],
+			},
+		},
+	},
+	{
+		displayName: 'Search Term',
+		required: true,
+		name: 'searchTerm',
+		type: 'string',
+		placeholder: 'Enter search term to search in contacts',
+		default: '',
+		description: 'Term to search for in contacts',
+		routing: {
+			send: {
+				type: 'query',
+				property: 'suchbegriff',
+			},
+		},
+		displayOptions: {
+			show: {
+				resource: ['contact'],
+				operation: ['search'],
 			},
 		},
 	},
@@ -251,7 +340,7 @@ export const contactDescription: INodeProperties[] = [
 		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
-				operation: ['getAll'],
+				operation: ['getAll', 'search'],
 				resource: ['contact'],
 			},
 		},
