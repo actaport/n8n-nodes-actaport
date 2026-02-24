@@ -41,6 +41,7 @@ panel.
 | **Collision Check**                   | get                                           |
 | **Contact**                           | get, getAll, create, update, search           |
 | **Deadline**                          | get, getAll, create, update, updateStatus     |
+| **Department**                        | get, getAll                                   |
 | **Document**                          | get, getAll, update, download, create, search |
 | **Document Template**                 | get, getAll                                   |
 | **Expense**                           | get, getAll, create, update, delete           |
