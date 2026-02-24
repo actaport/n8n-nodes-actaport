@@ -1,5 +1,13 @@
 import { NodeConnectionTypes, type INodeType, type INodeTypeDescription } from 'n8n-workflow';
-import {getUsers, getClients, getContacts, getDocumentTemplates, getFolders, getOfficeLocations} from './listSearch';
+import {
+    getUsers,
+    getClients,
+    getContacts,
+    getDocumentTemplates,
+    getFolders,
+    getOfficeLocations,
+    getDocuments
+} from './listSearch';
 import { getAllocatableDocuments, getClerks, getAssistants } from './loadOptions';
 import {
 	additionalInformationCategoryDescription,
@@ -142,7 +150,8 @@ export class Actaport implements INodeType {
 			getContacts,
 			getDocumentTemplates,
 			getFolders,
-			getOfficeLocations
+			getOfficeLocations,
+			getDocuments
 		},
 		loadOptions: {
 			getAllocatableDocuments,

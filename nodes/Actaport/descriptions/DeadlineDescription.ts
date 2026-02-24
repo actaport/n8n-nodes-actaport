@@ -1,18 +1,16 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-const showOnlyForDeadline = {
-	resource: ['deadline'],
-};
-
-const showOnlyForDeadlineCreate = { operation: ['create'], resource: ['deadline'] };
-
 export const deadlineDescription: INodeProperties[] = [
 	{
 		displayName: 'Operation',
 		name: 'operation',
 		type: 'options',
 		noDataExpression: true,
-		displayOptions: { show: showOnlyForDeadline },
+		displayOptions: {
+			show: {
+				resource: ['deadline'],
+			},
+		},
 		options: [
 			{
 				name: 'Create',
@@ -23,6 +21,18 @@ export const deadlineDescription: INodeProperties[] = [
 					request: {
 						method: 'POST',
 						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/fristen',
+					},
+				},
+			},
+			{
+				name: 'Get',
+				value: 'get',
+				action: 'Get deadline',
+				description: 'Retrieve a single deadline',
+				routing: {
+					request: {
+						method: 'GET',
+						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/fristen/{{$parameter["id"]}}',
 					},
 				},
 			},
@@ -72,6 +82,18 @@ export const deadlineDescription: INodeProperties[] = [
 				},
 			},
 			{
+				name: 'Update',
+				value: 'update',
+				action: 'Update deadline',
+				description: 'Update an existing deadline',
+				routing: {
+					request: {
+						method: 'PUT',
+						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/fristen/{{$parameter["id"]}}',
+					},
+				},
+			},
+			{
 				name: 'Update Status',
 				value: 'updateStatus',
 				action: 'Update deadline status',
@@ -80,18 +102,6 @@ export const deadlineDescription: INodeProperties[] = [
 					request: {
 						method: 'PUT',
 						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/fristen/{{$parameter["id"]}}/status/{{$parameter["status"]}}',
-					},
-				},
-			},
-			{
-				name: 'Get',
-				value: 'get',
-				action: 'Get deadline',
-				description: 'Retrieve a single deadline',
-				routing: {
-					request: {
-						method: 'GET',
-						url: '=/v1/akten/{{$parameter["laufendeNummer"]}}/{{$parameter["bezugsJahr"]}}/fristen/{{$parameter["id"]}}',
 					},
 				},
 			},
@@ -105,7 +115,7 @@ export const deadlineDescription: INodeProperties[] = [
 		required: true,
 		displayOptions: {
 			show: {
-				operation: ['create', 'updateStatus', 'get'],
+				operation: ['create', 'update', 'updateStatus', 'get'],
 				resource: ['deadline'],
 			},
 		},
@@ -119,7 +129,7 @@ export const deadlineDescription: INodeProperties[] = [
 		required: true,
 		displayOptions: {
 			show: {
-				operation: ['create', 'updateStatus', 'get'],
+				operation: ['create', 'update', 'updateStatus', 'get'],
 				resource: ['deadline'],
 			},
 		},
@@ -291,7 +301,7 @@ export const deadlineDescription: INodeProperties[] = [
 		type: 'string',
 		displayOptions: {
 			show: {
-				operation: ['updateStatus', 'get'],
+				operation: ['get', 'update', 'updateStatus'],
 				resource: ['deadline'],
 			},
 		},
@@ -300,24 +310,24 @@ export const deadlineDescription: INodeProperties[] = [
 		displayName: 'Status',
 		name: 'status',
 		required: true,
-		description: 'Neuer Status der Deadline',
+		description: 'New status of the deadline',
 		default: 'ERLEDIGT',
 		type: 'options',
 		options: [
 			{
-				name: 'OFFEN',
+				name: 'Open',
 				value: 'OFFEN',
 			},
 			{
-				name: 'ZUGENEHMIGEN',
+				name: 'To Be Approved',
 				value: 'ZUGENEHMIGEN',
 			},
 			{
-				name: 'VORFRIST ERLEDIGT',
+				name: 'Preliminary Completed',
 				value: 'VORFRIST_ERLEDIGT',
 			},
 			{
-				name: 'ERLEDIGT',
+				name: 'Completed',
 				value: 'ERLEDIGT',
 			},
 		],
@@ -342,7 +352,28 @@ export const deadlineDescription: INodeProperties[] = [
 		},
 		displayOptions: {
 			show: {
-				...showOnlyForDeadlineCreate,
+				operation: ['create'],
+				resource: ['deadline'],
+			},
+		},
+	},
+	{
+		displayName: 'Note',
+		name: 'anmerkung',
+		type: 'string',
+		default: '',
+		description: 'Note for the deadline',
+		routing: {
+			send: {
+				property: 'anmerkung',
+				type: 'body',
+				value: '={{ $value === "" ? undefined : $value }}',
+			},
+		},
+		displayOptions: {
+			show: {
+				operation: ['create'],
+				resource: ['update'],
 			},
 		},
 	},
@@ -360,7 +391,8 @@ export const deadlineDescription: INodeProperties[] = [
 		},
 		displayOptions: {
 			show: {
-				...showOnlyForDeadlineCreate,
+				operation: ['create', 'update'],
+				resource: ['deadline'],
 			},
 		},
 	},
@@ -379,7 +411,27 @@ export const deadlineDescription: INodeProperties[] = [
 		},
 		displayOptions: {
 			show: {
-				...showOnlyForDeadlineCreate,
+				operation: ['create'],
+				resource: ['deadline'],
+			},
+		},
+	},
+	{
+		displayName: 'End of Deadline',
+		name: 'fristende',
+		type: 'dateTime',
+		default: '',
+		routing: {
+			send: {
+				property: 'fristende',
+				type: 'body',
+				value: '={{ $value ? new Date($value).toISOString() : undefined }}',
+			},
+		},
+		displayOptions: {
+			show: {
+				operation: ['update'],
+				resource: ['deadline'],
 			},
 		},
 	},
@@ -397,7 +449,27 @@ export const deadlineDescription: INodeProperties[] = [
 		},
 		displayOptions: {
 			show: {
-				...showOnlyForDeadlineCreate,
+				operation: ['create'],
+				resource: ['deadline'],
+			},
+		},
+	},
+	{
+		displayName: 'Reason',
+		name: 'fristgrund',
+		type: 'string',
+		default: '',
+		routing: {
+			send: {
+				property: 'fristgrund',
+				type: 'body',
+				value: '={{ $value === "" ? undefined : $value }}',
+			},
+		},
+		displayOptions: {
+			show: {
+				operation: ['update'],
+				resource: ['deadline'],
 			},
 		},
 	},
@@ -415,7 +487,32 @@ export const deadlineDescription: INodeProperties[] = [
 		},
 		displayOptions: {
 			show: {
-				...showOnlyForDeadlineCreate,
+				operation: ['create'],
+				resource: ['deadline'],
+			},
+		},
+	},
+	{
+		displayName: 'Final Deadline',
+		name: 'notfrist',
+		type: 'options',
+		default: '',
+		options: [
+			{ name: 'Do Not Change', value: '' },
+			{ name: 'Yes', value: true },
+			{ name: 'No', value: false },
+		],
+		routing: {
+			send: {
+				type: 'body',
+				property: 'notfrist',
+				value: "={{ $parameter.notfrist === '' ? undefined : $parameter.notfrist }}",
+			},
+		},
+		displayOptions: {
+			show: {
+				operation: ['update'],
+				resource: ['deadline'],
 			},
 		},
 	},
@@ -433,7 +530,8 @@ export const deadlineDescription: INodeProperties[] = [
 		},
 		displayOptions: {
 			show: {
-				...showOnlyForDeadlineCreate,
+				operation: ['create', 'update'],
+				resource: ['deadline'],
 			},
 		},
 	},
@@ -451,7 +549,90 @@ export const deadlineDescription: INodeProperties[] = [
 		},
 		displayOptions: {
 			show: {
-				...showOnlyForDeadlineCreate,
+				operation: ['create'],
+				resource: ['deadline'],
+			},
+		},
+	},
+	{
+		displayName: 'Provisional',
+		name: 'vorlaeufig',
+		type: 'options',
+		default: '',
+		options: [
+			{ name: 'Do Not Change', value: '' },
+			{ name: 'Yes', value: true },
+			{ name: 'No', value: false },
+		],
+		routing: {
+			send: {
+				type: 'body',
+				property: 'vorlaeufig',
+				value: "={{ $parameter.vorlaeufig === '' ? undefined : $parameter.vorlaeufig }}",
+			},
+		},
+		displayOptions: {
+			show: {
+				operation: ['update'],
+				resource: ['deadline'],
+			},
+		},
+	},
+	{
+		displayName: 'Remove Document',
+		name: 'removeDocument',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: {
+				operation: ['update'],
+				resource: ['deadline'],
+			},
+		},
+		routing: {
+			send: {
+				property: 'aktendokument',
+				type: 'body',
+				value: '={{ $value ? null : undefined }}',
+			},
+		},
+	},
+	{
+		displayName: 'Document',
+		name: 'documentId',
+		type: 'resourceLocator',
+		default: { mode: 'list', value: '' },
+		displayOptions: {
+			show: {
+				operation: ['create', 'update'],
+				resource: ['deadline'],
+			},
+			hide: {
+				removeDocument: [true],
+			},
+		},
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				typeOptions: {
+					searchListMethod: 'getDocuments',
+					searchable: true,
+				},
+			},
+			{
+				displayName: 'By ID',
+				name: 'id',
+				type: 'string',
+				placeholder: 'Enter Document ID',
+			},
+		],
+		routing: {
+			send: {
+				property: 'aktendokument',
+				type: 'body',
+				value: '={{ $value && $value !== "" ? { id: $value } : undefined }}',
 			},
 		},
 	},

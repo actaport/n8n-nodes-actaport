@@ -4,3 +4,4 @@ export * from './UsersListSearch';
 export * from './DocumentTemplateListSearch';
 export * from './FoldersListSearch';
 export * from './OfficeLocationsSearch';
+export * from './DocumentsListSearch';

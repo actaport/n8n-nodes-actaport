@@ -1,10 +1,10 @@
 import {
 	ILoadOptionsFunctions,
 	INodeListSearchItems,
-	INodeListSearchResult, NodeApiError,
-	NodeOperationError,
+	INodeListSearchResult, NodeApiError
 } from 'n8n-workflow';
 import { actaportApiRequest } from '../GenericFunctions';
+import {ValidationHelper} from "../helpers";
 
 type OrdnerResponse = {
 	id: string;
@@ -18,24 +18,7 @@ export async function getFolders(
 	this: ILoadOptionsFunctions,
 	filter?: string,
 ): Promise<INodeListSearchResult> {
-	const laufendeNummer = this.getNodeParameter('laufendeNummer', 0) as string;
-	const bezugsJahr = this.getNodeParameter('bezugsJahr', 0) as string;
-
-	if (!laufendeNummer) {
-		throw new NodeOperationError(
-			this.getNode(),
-			'Please fill in the Sequential Number in order to load folders.',
-			{ level: 'warning' },
-		);
-	}
-
-	if (!bezugsJahr) {
-		throw new NodeOperationError(
-			this.getNode(),
-			'Please fill in the Reference Year in order to load folders.',
-			{ level: 'warning' },
-		);
-	}
+	const { laufendeNummer, bezugsJahr } = ValidationHelper.requireCaseFileSelector(this, 'folders');
 
 	let roots: OrdnerResponse[] = [];
 	try {

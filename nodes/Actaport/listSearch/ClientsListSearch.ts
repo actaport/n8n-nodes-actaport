@@ -1,10 +1,10 @@
 import {
 	ILoadOptionsFunctions,
 	INodeListSearchItems,
-	INodeListSearchResult, NodeApiError,
-	NodeOperationError,
+	INodeListSearchResult, NodeApiError
 } from 'n8n-workflow';
 import { actaportApiRequest } from '../GenericFunctions';
+import {ValidationHelper} from "../helpers";
 
 type ClientSearchItem = {
 	id: string | number;
@@ -20,24 +20,7 @@ export async function getClients(this: ILoadOptionsFunctions): Promise<INodeList
 		mandanten: {},
 	};
 
-	const laufendeNummer = this.getNodeParameter('laufendeNummer', 0) as string;
-	const bezugsJahr = this.getNodeParameter('bezugsJahr', 0) as string;
-
-	if (!laufendeNummer) {
-		throw new NodeOperationError(
-			this.getNode(),
-			'Please fill in the Laufende Nummer before searching for clients.',
-			{ level: 'warning' },
-		);
-	}
-
-	if (!bezugsJahr) {
-		throw new NodeOperationError(
-			this.getNode(),
-			'Please fill in the Bezugsjahr before loading clients.',
-			{ level: 'warning' },
-		);
-	}
+	const { laufendeNummer, bezugsJahr } = ValidationHelper.requireCaseFileSelector(this, 'clients');
 
 	try {
 		responseData = (await actaportApiRequest.call(

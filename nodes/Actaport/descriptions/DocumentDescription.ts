@@ -1,6 +1,5 @@
 import { INodeParameterResourceLocator, INodeProperties, NodeOperationError } from 'n8n-workflow';
-import { preSendUpload } from '../helpers/DocumentUploadHelper';
-import { returnBinaryData } from '../helpers/DocumentDownloadHelper';
+import { preSendUpload, returnBinaryData } from '../helpers';
 
 const showOnlyForDocument = {
 	resource: ['document'],

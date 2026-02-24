@@ -40,8 +40,8 @@ panel.
 | **Case File**                         | get, getAll, create, update               |
 | **Collision Check**                   | get                                       |
 | **Contact**                           | get, getAll, create, update               |
-| **Deadline**                          | get, getAll, create, update               |
-| **Document**                          | get, getAll, update, download             |
+| **Deadline**                          | get, getAll, create, update, updateStatus |
+| **Document**                          | get, getAll, update, download, create     |
 | **Document Template**                 | get, getAll                               |
 | **Expense**                           | get, getAll, create, update, delete       |
 | **Folder**                            | get, getAll, create                       |
