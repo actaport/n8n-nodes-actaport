@@ -575,6 +575,20 @@ export const documentDescription: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Automatically Create Folder',
+		name: 'autocreateFolder',
+		type: 'boolean',
+		default: true,
+		description:
+			'Whether to automatically create the folder with the given name if it does not exist. If disabled only existing folders can be used.',
+		displayOptions: {
+			show: {
+				operation: ['upload'],
+				resource: ['document'],
+			},
+		},
+	},
+	{
 		displayName: 'Additional Options',
 		name: 'options',
 		type: 'collection',
@@ -599,9 +613,43 @@ export const documentDescription: INodeProperties[] = [
 				displayName: 'Folder Name',
 				name: 'folderName',
 				type: 'string',
+				displayOptions: {
+					hide: {
+						'/autocreateFolder': [false],
+					},
+				},
 				default: '',
 				description:
 					'Name of the folder to upload the document into. If not specified, the document will be uploaded to the default folder.',
+			},
+			{
+				displayName: 'Folder',
+				name: 'ordnerId',
+				type: 'resourceLocator',
+				description: 'ID of the folder to upload the document into',
+				default: { mode: 'list', value: '' },
+				displayOptions: {
+					hide: {
+						'/autocreateFolder': [true],
+					},
+				},
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						typeOptions: {
+							searchListMethod: 'getFolders',
+							searchable: true,
+						},
+					},
+					{
+						displayName: 'By ID',
+						name: 'id',
+						type: 'string',
+						placeholder: 'Enter Folder ID',
+					},
+				],
 			},
 		],
 	},
