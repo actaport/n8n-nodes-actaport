@@ -38,6 +38,7 @@ panel.
 |---------------------------------------|-----------------------------------------------|
 | **Additional Information Categories** | get, getAll                                   |
 | **Case File**                         | get, getAll, create, update                   |
+| **Client Fee**                        | get, update                                   |
 | **Collision Check**                   | get                                           |
 | **Contact**                           | get, getAll, create, update, search           |
 | **Deadline**                          | get, getAll, create, update, updateStatus     |

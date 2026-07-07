@@ -15,3 +15,4 @@ export * from './ContactDescription';
 export * from './FolderDescription';
 export * from './DocumentTemplateDescription';
 export * from './DepartmentDescription';
+export * from './ClientFeeDescription';

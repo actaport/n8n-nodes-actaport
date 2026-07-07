@@ -8,7 +8,7 @@ import {
     getOfficeLocations,
     getDocuments
 } from './listSearch';
-import {getAllocatableDocuments, getClerks, getAssistants, getDepartments} from './loadOptions';
+import {getAllocatableDocuments, getClerks, getAssistants, getDepartments, getCostCenters} from './loadOptions';
 import {
 	additionalInformationCategoryDescription,
 	noteDescription,
@@ -26,7 +26,8 @@ import {
 	contactDescription,
 	folderDescription,
     documentTemplateDescription,
-    departmentDescription
+    departmentDescription,
+	clientFeeDescription,
 } from './descriptions';
 
 export class Actaport implements INodeType {
@@ -66,6 +67,10 @@ export class Actaport implements INodeType {
 					{
 						name: 'Case File',
 						value: 'caseFile',
+					},
+					{
+						name: 'Client Fee',
+						value: 'clientFee',
 					},
 					{
 						name: 'Collision',
@@ -132,6 +137,7 @@ export class Actaport implements INodeType {
 			},
 			...additionalInformationCategoryDescription,
 			...caseFileDescription,
+			...clientFeeDescription,
 			...collisionDescription,
 			...contactDescription,
 			...deadlineDescription,
@@ -165,6 +171,7 @@ export class Actaport implements INodeType {
 			getClerks,
 			getAssistants,
             getDepartments,
+			getCostCenters,
 		},
 	};
 }
