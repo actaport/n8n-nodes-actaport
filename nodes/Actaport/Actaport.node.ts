@@ -28,6 +28,7 @@ import {
     documentTemplateDescription,
     departmentDescription,
 	clientFeeDescription,
+    expenditureDescription,
 } from './descriptions';
 
 export class Actaport implements INodeType {
@@ -96,6 +97,10 @@ export class Actaport implements INodeType {
 						name: 'Document Template',
 						value: 'documentTemplate',
 					},
+                    {
+                        name: 'Expenditure',
+                        value: 'expenditure',
+                    },
 					{
 						name: 'Expense',
 						value: 'expense',
@@ -144,7 +149,8 @@ export class Actaport implements INodeType {
             ...departmentDescription,
 			...documentDescription,
 			...documentTemplateDescription,
-			...expenseDescription,
+            ...expenditureDescription,
+            ...expenseDescription,
 			...folderDescription,
 			...invoiceDescription,
 			...noteDescription,
