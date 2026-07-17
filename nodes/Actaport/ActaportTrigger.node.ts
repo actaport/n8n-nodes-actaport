@@ -18,11 +18,12 @@ import { ActaportWebhook, ACTAPORT_EVENT_OPTIONS } from './ActaportTypes';
 export class ActaportTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Actaport Trigger',
+		subtitle: '={{$parameter["events"].join(", ")}}',
 		name: 'actaportTrigger',
 		group: ['trigger'],
 		version: 1,
 		description: 'Triggers the workflow when an event occurs in Actaport',
-		icon: 'file:actaport.svg',
+		icon: { light: 'file:actaport.light.svg', dark: 'file:actaport.dark.svg' },
 		usableAsTool: true,
 		defaults: {
 			name: 'Actaport Trigger',
