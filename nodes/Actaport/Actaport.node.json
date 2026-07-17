@@ -1,5 +1,5 @@
 {
-  "node": "@actaport/n8n-nodes-actaport",
+  "node": "@actaport/n8n-nodes-actaport.actaport",
   "nodeVersion": "1.0",
   "codexVersion": "1.0",
   "categories": [
