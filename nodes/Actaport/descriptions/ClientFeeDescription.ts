@@ -468,7 +468,7 @@ export const clientFeeDescription: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Lump Sum For Expenses',
+		displayName: 'Lump Sum for Expenses',
 		name: 'auslagenpauschalen',
 		type: 'fixedCollection',
 		default: [],
